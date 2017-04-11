@@ -32,8 +32,30 @@ public:
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
 
+  ///* Augmented sigma points matrix
+  MatrixXd Xsig_aug_;
+
+  ///* for predicted sigma points mapped to Radar measurement space
+  MatrixXd Zsig_;
+
+  ///* the mapped state in Radar measurement space
+  VectorXd z_pred_;
+
+  ///* for the calculation of Radar measurement update
+  MatrixXd S_radar_;
+
+  ///* the covariance matrix of Radar measurement
+  MatrixXd R_radar_;
+
+  ///* for laser measurement
+  MatrixXd H_laser_;
+
+  ///* the covariance matrix for laser measurements
+  MatrixXd R_laser_;
+
   ///* time when the state is true, in us
-  long long time_us_;
+  long long time_us_; // Not sure what it is for.
+  long previous_timestamp_;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
@@ -57,6 +79,9 @@ public:
   double std_radrd_ ;
 
   ///* Weights of sigma points
+  double weight_0_; // the weight for sigma point zero
+  double weight_; // the weight for the rest of the sigma points
+
   VectorXd weights_;
 
   ///* State dimension
@@ -65,8 +90,17 @@ public:
   ///* Augmented state dimension
   int n_aug_;
 
+  ///* Number of sigma points
+  int n_sigma_;
+
+  ///* Radar measurement dimension
+  int n_z_;
+
   ///* Sigma point spreading parameter
   double lambda_;
+
+  ///* precomputed constant
+  double lambda_plus_n_aug;
 
   ///* the current NIS for radar
   double NIS_radar_;
@@ -83,6 +117,9 @@ public:
    * Destructor
    */
   virtual ~UKF();
+
+  // Check if the measurement is of acceptable qualify
+  bool GoodMeasurement(const MeasurementPackage &measurement_pack);
 
   /**
    * ProcessMeasurement
@@ -101,13 +138,30 @@ public:
    * Updates the state and the state covariance matrix using a laser measurement
    * @param meas_package The measurement at k+1
    */
-  void UpdateLidar(MeasurementPackage meas_package);
+  void UpdateLaser(MeasurementPackage meas_package);
 
   /**
    * Updates the state and the state covariance matrix using a radar measurement
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  // Called by Prediction for the final computation of the prediction of state, and covariance
+  // update x_, and P_
+  void PredictMeanAndCovariance();
+
+  // Trasform the augmented sigma points by the process
+  void SigmaPointPrediction(double delta_t);
+
+  // Compute the augmented sigmal points
+  void AugmentedSigmaPoints();
+
+  // Transform the internal state to be comparable to radar measurement
+  void PredictRadarMeasurement();
+
+  // Update state and covariance from radar measurement
+  void UpdateStateFromRadar(MeasurementPackage& meas_package);
+
 };
 
 #endif /* UKF_H */

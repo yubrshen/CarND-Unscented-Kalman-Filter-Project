@@ -5,6 +5,12 @@
 
 class MeasurementPackage {
 public:
+  MeasurementPackage() {}
+  MeasurementPackage(const MeasurementPackage& rhs) {
+    timestamp_ = rhs.timestamp_;
+    sensor_type_ = rhs.sensor_type_;
+    raw_measurements_ = rhs.raw_measurements_;
+  }
   long long timestamp_;
 
   enum SensorType{
