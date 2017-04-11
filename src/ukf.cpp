@@ -19,7 +19,7 @@ UKF::UKF() {
   use_radar_ = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.94; // The original 30 may be too high,
+  std_a_ = 1.5; // The original 30 may be too high,
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
@@ -57,18 +57,18 @@ UKF::UKF() {
   n_z_ = 3;
 
   // initial state vector
-  x_ = VectorXd(n_x_);
+  x_ = VectorXd(n_x_); x_.fill(0.0);
 
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
   P_ <<
-    1, 0, 0,    0,    0,
-    0, 1, 0,    0,    0,
-    0, 0, 1000, 0,    0,
-    0, 0, 0,    1000, 0,
-    0, 0, 0,    0,    1000;     // initial guess
+    1,  0,  0,    0,    0,
+    0,  1,  0,    0,    0,
+    0,  0,  1000, 0,    0,
+    0,  0,  0,    1000, 0,
+    0,  0,  0,    0,    1000;     // initial guess
 
-  z_pred_ = VectorXd(n_z_);
+  z_pred_ = VectorXd(n_z_); z_pred_.fill(0.0);
 
   lambda_ = 3 - n_aug_; // lambda_ + n_aug_ = 3 constant!
   lambda_plus_n_aug = 3;
@@ -76,15 +76,14 @@ UKF::UKF() {
   weight_0_ = lambda_/lambda_plus_n_aug;
   weight_ = 0.5/lambda_plus_n_aug;
 
-  Xsig_pred_ = MatrixXd(n_x_, n_sigma_);
+  Xsig_pred_ = MatrixXd(n_x_, n_sigma_); Xsig_pred_.fill(0.0);
 
-  Xsig_aug_ = MatrixXd(n_aug_, n_sigma_);
-  Zsig_ = MatrixXd(n_z_, n_sigma_);
-  z_pred_ = VectorXd(n_z_);
+  Xsig_aug_ = MatrixXd(n_aug_, n_sigma_); Xsig_aug_.fill(0.0);
+  Zsig_ = MatrixXd(n_z_, n_sigma_); Zsig_.fill(0.0);
+  z_pred_ = VectorXd(n_z_); z_pred_.fill(0.0);
 
-  S_radar_ = MatrixXd(n_z_, n_z_);
-  R_radar_ = MatrixXd(n_z_, n_z_);
-  R_radar_.fill(0.0);
+  S_radar_ = MatrixXd(n_z_, n_z_); S_radar_.fill(0.0);
+  R_radar_ = MatrixXd(n_z_, n_z_); R_radar_.fill(0.0);
   R_radar_(0,0) = std_radr_*std_radr_;
   R_radar_(1,1) = std_radphi_*std_radphi_;
   R_radar_(2,2) = std_radrd_*std_radrd_;
@@ -124,10 +123,10 @@ bool UKF::GoodMeasurement(const MeasurementPackage &measurement_pack) {
     }
     break;
   }
-  return false;
+  return true; // disable false;
 }
 
-const double SMALL_MEASUREMENT = 0.1;
+const double SMALL_MEASUREMENT = 0.001;
 
 MeasurementPackage FixedMeasurement(const MeasurementPackage &measurement_pack) {
   MeasurementPackage copied;
@@ -177,12 +176,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_.fill(0.0);
       x_[0] = measurement_pack.raw_measurements_[0] * cos(measurement_pack.raw_measurements_[1]);
       x_[1] = measurement_pack.raw_measurements_[0] * sin(measurement_pack.raw_measurements_[1]);
-
-      // x_ <<
-      // measurement_pack.raw_measurements_[2], // angle phi seems the same as yaw
-      // measurement_pack.raw_measurements_[0], // rho_dot seems related to the speed v
-      // SMALL_MEASUREMENT;                     // yaw_dot: no reliable information assumed to be small
-
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0, 0;
     }
@@ -354,17 +347,16 @@ void UKF::SigmaPointPrediction(double delta_t) {
 // Compute the augmented sigmal points
 void UKF::AugmentedSigmaPoints() {
   //create augmented mean vector
-  VectorXd x_aug = VectorXd(n_aug_);
+  VectorXd x_aug = VectorXd(n_aug_); x_aug.fill(0.0);
 
   //create augmented state covariance
-  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_); P_aug.fill(0);
 
   //create augmented mean state
   x_aug.head(n_x_) = x_;
-  x_aug.segment(n_x_, 2).fill(0);
+  // x_aug.segment(n_x_, 2).fill(0); already done when declared
 
   //create augmented covariance matrix
-  P_aug.fill(0);
   P_aug.topLeftCorner(n_x_, n_x_) = P_;
   P_aug(5,5) = std_a_*std_a_;
   P_aug(6,6) = std_yawdd_*std_yawdd_;
@@ -429,8 +421,7 @@ void UKF::UpdateStateFromRadar(MeasurementPackage& meas_package) {
   VectorXd z = meas_package.raw_measurements_;
   //calculate cross correlation matrix
   VectorXd d_x, d_z;
-  MatrixXd Tc = MatrixXd(n_x_, n_z_);
-  Tc.fill(0.0);
+  MatrixXd Tc = MatrixXd(n_x_, n_z_); Tc.fill(0.0);
   for (int i=1; i < n_sigma_; i++){
     d_x = Xsig_pred_.col(i) - x_;
     d_z = Zsig_.col(i) - z_pred_;
