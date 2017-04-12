@@ -103,10 +103,16 @@ public:
   double lambda_plus_n_aug;
 
   ///* the current NIS for radar
-  double NIS_radar_;
+  double NIS_radar_ = 0;
 
   ///* the current NIS for laser
-  double NIS_laser_;
+  double NIS_laser_ = 0;
+
+  ///* the time delta from the last measurement
+  double delta_t_ = 0;
+
+  ///* indicate whether there is at least one prediction done, Xsig_pred_ available
+  bool not_yet_predicted_ = true;
 
   /**
    * Constructor
@@ -162,6 +168,8 @@ public:
   // Update state and covariance from radar measurement
   void UpdateStateFromRadar(MeasurementPackage& meas_package);
 
+  // Compute the overall covariance of the measurement update
+  inline MatrixXd S_laser_inversed();
 };
 
 #endif /* UKF_H */

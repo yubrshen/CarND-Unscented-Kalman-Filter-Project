@@ -154,12 +154,13 @@ int main(int argc, char* argv[]) {
   out_file_ << "vx_true" << "\t";
   out_file_ << "vy_true" << "\t";
   out_file_ << "NIS" << "\t";
-  out_file_ << "sensor_type" << "\n";
+  out_file_ << "sensor_type" << "\t";
+  out_file_ << "delta_t" << "\n";
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
+    cout << "k: " << k << endl;
     if (ukf.GoodMeasurement(measurement_pack_list[k])) {
       // Call the UKF-based fusion
-      cout << "k: " << k << endl;
       ukf.ProcessMeasurement(measurement_pack_list[k]);
 
       // output the estimation
@@ -196,11 +197,14 @@ int main(int argc, char* argv[]) {
     
       if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
         out_file_ << ukf.NIS_laser_ << "\t";
-        out_file_ << "L" << "\n";
+        out_file_ << "L" << "\t";
       } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
         out_file_ << ukf.NIS_radar_ << "\t";
-        out_file_ << "R" << "\n";
+        out_file_ << "R" << "\t";
       }
+
+      out_file_ << ukf.delta_t_ << "\n";
+
       // convert ukf x vector to cartesian to compare to ground truth
       VectorXd ukf_x_cartesian_ = VectorXd(4);
 
