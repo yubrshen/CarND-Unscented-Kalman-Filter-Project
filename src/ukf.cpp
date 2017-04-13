@@ -13,17 +13,20 @@ using std::vector;
  */
 UKF::UKF() {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  // use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = true;
+  // use_radar_ = true;
+
+  sensor_switches_[MeasurementPackage::LASER] = true;
+  sensor_switches_[MeasurementPackage::RADAR] = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 1.5; // The original 30 may be too high,
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI/3;  // The original 30 may be too high
+  std_yawdd_ = M_PI/10;  // The original 30 may be too high
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
   // It's suggested in the Slack channel to be M_PI/3 with good performance.
 
@@ -64,9 +67,9 @@ UKF::UKF() {
   P_ <<
     1,  0,  0,    0,    0,
     0,  1,  0,    0,    0,
-    0,  0,  1000, 0,    0,
-    0,  0,  0,    1000, 0,
-    0,  0,  0,    0,    1000;     // initial guess
+    0,  0,  1,    0,    0,
+    0,  0,  0,    1,    0,
+    0,  0,  0,    0,    1;      // initial guess
 
   z_pred_ = VectorXd(n_z_); z_pred_.fill(0.0);
 
@@ -107,6 +110,8 @@ UKF::UKF() {
 
 UKF::~UKF() {}
 
+const double SMALL_MEASUREMENT = 0.01; // 0.01m = 1 cm. sqrt(0.01^2 + 0.01^2) = ca. 1.4 cm
+
 inline float SquaredDistance(const float& px, const float& py) {
   return px*px + py*py;
 }
@@ -114,27 +119,25 @@ inline float SquaredDistance(const float& px, const float& py) {
 bool UKF::GoodMeasurement(const MeasurementPackage &measurement_pack) {
   switch (measurement_pack.sensor_type_) {
   case MeasurementPackage::RADAR:
-    if (0.001 < measurement_pack.raw_measurements_[0]) {
+    if (SMALL_MEASUREMENT < measurement_pack.raw_measurements_[0]) {
       return true;
     }
     break;
   case MeasurementPackage::LASER:
-    if (0.001 < SquaredDistance(measurement_pack.raw_measurements_[0],
+    if (SMALL_MEASUREMENT < SquaredDistance(measurement_pack.raw_measurements_[0],
                                  measurement_pack.raw_measurements_[1])) {
       return true;
     }
     break;
   }
-  return true; // false;
+  return false; // reject not qualified data
 }
-
-const double SMALL_MEASUREMENT = 0.1;
 
 MeasurementPackage FixedMeasurement(const MeasurementPackage &measurement_pack) {
   MeasurementPackage copied;
   switch (measurement_pack.sensor_type_) {
   case MeasurementPackage::RADAR:
-    if (measurement_pack.raw_measurements_[0] < 0.0001) {
+    if (measurement_pack.raw_measurements_[0] < SMALL_MEASUREMENT) {
       copied = MeasurementPackage(measurement_pack);
       copied.raw_measurements_[0] = SMALL_MEASUREMENT;
       return copied;
@@ -142,7 +145,7 @@ MeasurementPackage FixedMeasurement(const MeasurementPackage &measurement_pack) 
     break;
   case MeasurementPackage::LASER:
     if (SquaredDistance(measurement_pack.raw_measurements_[0],
-                        measurement_pack.raw_measurements_[1]) < 0.0001) {
+                        measurement_pack.raw_measurements_[1]) < SMALL_MEASUREMENT) {
       copied = MeasurementPackage(measurement_pack);
       copied.raw_measurements_[0] = SMALL_MEASUREMENT;
       copied.raw_measurements_[1] = SMALL_MEASUREMENT;
@@ -178,42 +181,38 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_.fill(0.0);
       x_[0] = measurement_pack.raw_measurements_[0] * cos(measurement_pack.raw_measurements_[1]);
       x_[1] = measurement_pack.raw_measurements_[0] * sin(measurement_pack.raw_measurements_[1]);
+      x_[2] = measurement_pack.raw_measurements_[2]; // rho_dot may be approximation to the velocity
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0, 0;
     }
     is_initialized_ = true;
     return; // no more point to process this initial measurement
   }
-
-  // Prediction
-  double delta_t = (measurement_pack.timestamp_ - previous_timestamp_)/1000000.0;
-  delta_t_ = delta_t;
-  previous_timestamp_ = measurement_pack.timestamp_;
-  if ((0 < delta_t) || not_yet_predicted_) {
+  if (sensor_switches_[measurement_pack.sensor_type_]) { // add guard to only proceed with the enabled sensor
+    // Prediction
+    double delta_t = (measurement_pack.timestamp_ - previous_timestamp_)/1000000.0;
+    delta_t_ = delta_t;
+    previous_timestamp_ = measurement_pack.timestamp_;
     while (0.1 < delta_t) {
-        const double dt = 0.05;
-        Prediction(dt);
-        delta_t -= dt;
+      const double dt = 0.05;
+      Prediction(dt);
+      delta_t -= dt;
     }
     Prediction(delta_t);
-    if (not_yet_predicted_) not_yet_predicted_ = false;
+    // Use the sensor type to perform the update step.
+    // Update the state and covariance matrices.
+    switch (measurement_pack.sensor_type_) {
+    case MeasurementPackage::RADAR:
+      UpdateRadar(measurement_pack);
+      break;
+    case MeasurementPackage::LASER:
+      UpdateLaser(measurement_pack);
+      break;
+    }
+    // print the output
+    cout << "x_ = \n" << x_ << endl;
+    cout << "P_ = \n" << P_ << endl;
   }
-
-  // Use the sensor type to perform the update step.
-  // Update the state and covariance matrices.
-  switch (measurement_pack.sensor_type_) {
-  case MeasurementPackage::RADAR:
-    UpdateRadar(measurement_pack);
-
-    break;
-  case MeasurementPackage::LASER:
-    UpdateLaser(measurement_pack);
-    break;
-  }
-
-  // print the output
-  cout << "x_ = " << x_ << endl;
-  cout << "P_ = " << P_ << endl;
 }
 
 /**
@@ -233,7 +232,7 @@ void UKF::Prediction(double delta_t) {
 }
 
 // inline
-double AngleNormalize_alternative(double angle_in) {
+double AngleNormalize(double angle_in) {
   double angle = angle_in;
   if (M_PI < fabs(angle)) {
     double full_circle = 2*M_PI;
@@ -244,7 +243,7 @@ double AngleNormalize_alternative(double angle_in) {
   return angle;
 }
 
-double AngleNormalize(double angle_in) {
+double AngleNormalize_alternative(double angle_in) {
   double angle = angle_in;
   if (M_PI < fabs(angle)) {
     angle = atan2(sin(angle), cos(angle));
@@ -311,6 +310,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 void UKF::PredictMeanAndCovariance() {
   // assume sigma points transformed by the process are updated.
+  // cout << "Xsig_pred_: \n" << Xsig_pred_ << endl;
   x_.fill(0);
   for (int i=1; i < n_sigma_; i++) {
     x_ = x_ + Xsig_pred_.col(i);
@@ -335,35 +335,37 @@ void UKF::PredictMeanAndCovariance() {
 
 // Trasform the augmented sigma points by the process
 void UKF::SigmaPointPrediction(double delta_t) {
-    //predict sigma points
-    //avoid division by zero
-    double delta_t_sq = delta_t*delta_t;
-    double px=0, py=0, v=0, yaw=0, yaw_dot=0, nu_a=0, nu_yaw_dot_dot=0;
-    double c1=0, c2=0, c3=0;
-    for (int i = 0; i < n_aug_; i++) {
-      px = Xsig_aug_(0, i);
-      py = Xsig_aug_(1, i);
-      v = Xsig_aug_(2, i);
-      yaw = Xsig_aug_(3, i);
-      yaw_dot = Xsig_aug_(4, i);
-      nu_a = Xsig_aug_(5, i);
-      nu_yaw_dot_dot = Xsig_aug_(6, i);
+  //predict sigma points
+  //avoid division by zero
+  // cout << "Xsig_aug_:\n" << Xsig_aug_ << endl;
 
-      c3 = 0.5*delta_t_sq*nu_a;
-      c1 = v*delta_t + c3;
-      if (fabs(yaw_dot) < 0.0001) {
-        Xsig_pred_(0, i) = px + cos(yaw)*c1;
-        Xsig_pred_(1, i) = py + sin(yaw)*c1;
-      } else {
-          c2 = (v/yaw_dot);
-          Xsig_pred_(0, i) = px + c2*(sin(yaw + yaw_dot*delta_t) - sin(yaw)) + c3*cos(yaw);
-          Xsig_pred_(1, i) = py + c2*(-cos(yaw + yaw_dot*delta_t) + cos(yaw)) + c3*sin(yaw);
-      }
-      Xsig_pred_(2, i) = v + delta_t*nu_a;
-      Xsig_pred_(3, i) = yaw + yaw_dot*delta_t + 0.5*delta_t_sq*nu_yaw_dot_dot;
-      Xsig_pred_(3, i) = AngleNormalize(Xsig_pred_(3, 1));
+  double delta_t_sq = delta_t*delta_t;
+  double px=0, py=0, v=0, yaw=0, yaw_dot=0, nu_a=0, nu_yaw_dot_dot=0;
+  double c1=0, c2=0, c3=0;
+  for (int i = 0; i < n_sigma_; i++) {
+    px             = Xsig_aug_(0, i);
+    py             = Xsig_aug_(1, i);
+    v              = Xsig_aug_(2, i);
+    yaw            = Xsig_aug_(3, i);
+    yaw_dot        = Xsig_aug_(4, i);
+    nu_a           = Xsig_aug_(5, i);
+    nu_yaw_dot_dot = Xsig_aug_(6, i);
 
-      Xsig_pred_(4, i) = yaw_dot + delta_t*nu_yaw_dot_dot;
+    c3 = 0.5*delta_t_sq*nu_a;
+    c1 = v*delta_t + c3;
+    if (fabs(yaw_dot) < 0.0001) {
+      Xsig_pred_(0, i) = px + cos(yaw)*c1;
+      Xsig_pred_(1, i) = py + sin(yaw)*c1;
+    } else {
+      c2 = (v/yaw_dot);
+      Xsig_pred_(0, i) = px + c2*(sin(yaw + yaw_dot*delta_t) - sin(yaw)) + c3*cos(yaw);
+      Xsig_pred_(1, i) = py + c2*(-cos(yaw + yaw_dot*delta_t) + cos(yaw)) + c3*sin(yaw);
+    }
+    Xsig_pred_(2, i) = v + delta_t*nu_a;
+    Xsig_pred_(3, i) = yaw + yaw_dot*delta_t + 0.5*delta_t_sq*nu_yaw_dot_dot;
+    Xsig_pred_(3, i) = AngleNormalize(Xsig_pred_(3, i));
+
+    Xsig_pred_(4, i) = yaw_dot + delta_t*nu_yaw_dot_dot;
   }
 }
 
@@ -379,8 +381,10 @@ void UKF::AugmentedSigmaPoints() {
   P_aug(5,5) = std_a_*std_a_;
   P_aug(6,6) = std_yawdd_*std_yawdd_;
 
+  // cout << "P_aug:\n" << P_aug << endl;
   //create square root matrix
   MatrixXd A = P_aug.llt().matrixL();
+  // cout << "square root matrix:\n" << A << endl;
 
   //create augmented sigma points
   double c = sqrt(lambda_plus_n_aug);

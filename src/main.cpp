@@ -50,6 +50,23 @@ void check_files(ifstream& in_file, string& in_name,
   }
 }
 
+// The following has the compiler error:
+// error: ‘sensor_type_names’ does not name a type
+// seems very strange.
+// std::map<MeasurementPackage::SensorType, std::string> sensor_type_names;
+// sensor_type_names[MeasurementPackage::LASER] = "LASER";
+// sensor_type_names[MeasurementPackage::RADAR] = "RADAR";
+
+std::string sensor_type_names(MeasurementPackage::SensorType type) {
+  switch (type) {
+  case MeasurementPackage::RADAR:
+    return "RADAR";
+    break;
+  case MeasurementPackage::LASER:
+    return "LASER";
+    break;
+  }
+}
 int main(int argc, char* argv[]) {
 
   check_arguments(argc, argv);
@@ -158,7 +175,7 @@ int main(int argc, char* argv[]) {
   out_file_ << "delta_t" << "\n";
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
-    cout << "k: " << k << endl;
+    cout << "k: " << k << " sensor type: " << sensor_type_names( measurement_pack_list[k].sensor_type_ ) << endl;
     if (ukf.GoodMeasurement(measurement_pack_list[k])) {
       // Call the UKF-based fusion
       ukf.ProcessMeasurement(measurement_pack_list[k]);

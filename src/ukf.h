@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <map>
 #include "tools.h"
 
 using Eigen::MatrixXd;
@@ -18,10 +19,13 @@ public:
   bool is_initialized_;
 
   ///* if this is false, laser measurements will be ignored (except for init)
-  bool use_laser_;
+  //bool use_laser_;
 
   ///* if this is false, radar measurements will be ignored (except for init)
-  bool use_radar_;
+  //bool use_radar_;
+
+  ///* map to access the switch for sensors
+  std::map<MeasurementPackage::SensorType, bool> sensor_switches_;
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
