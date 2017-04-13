@@ -60,10 +60,10 @@ void check_files(ifstream& in_file, string& in_name,
 std::string sensor_type_names(MeasurementPackage::SensorType type) {
   switch (type) {
   case MeasurementPackage::RADAR:
-    return "RADAR";
+    return "R";
     break;
   case MeasurementPackage::LASER:
-    return "LASER";
+    return "L";
     break;
   }
 }
@@ -159,27 +159,29 @@ int main(int argc, char* argv[]) {
   size_t number_of_measurements = measurement_pack_list.size();
 
   // column names for output file
-  out_file_ << "px" << "\t";
-  out_file_ << "py" << "\t";
-  out_file_ << "v" << "\t";
-  out_file_ << "yaw_angle" << "\t";
-  out_file_ << "yaw_rate" << "\t";
-  out_file_ << "px_measured" << "\t";
-  out_file_ << "py_measured" << "\t";
-  out_file_ << "px_true" << "\t";
-  out_file_ << "py_true" << "\t";
-  out_file_ << "vx_true" << "\t";
-  out_file_ << "vy_true" << "\t";
-  out_file_ << "NIS" << "\t";
-  out_file_ << "sensor_type" << "\t";
-  out_file_ << "delta_t" << "\n";
+  // out_file_ << "sensor_type" << "\t";
+  // out_file_ << "px" << "\t";
+  // out_file_ << "py" << "\t";
+  // out_file_ << "v" << "\t";
+  // out_file_ << "yaw_angle" << "\t";
+  // out_file_ << "yaw_rate" << "\t";
+  // out_file_ << "vx_est" << "\t";
+  // out_file_ << "vy_est" << "\t";
+  // out_file_ << "px_measured" << "\t";
+  // out_file_ << "py_measured" << "\t";
+  // out_file_ << "NIS" << "\t";
+  // out_file_ << "px_true" << "\t";
+  // out_file_ << "py_true" << "\t";
+  // out_file_ << "vx_true" << "\t";
+  // out_file_ << "vy_true" << "\t";
+  // removed: out_file_ << "delta_t" << "\n";
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
     cout << "k: " << k << " sensor type: " << sensor_type_names( measurement_pack_list[k].sensor_type_ ) << endl;
     if (ukf.GoodMeasurement(measurement_pack_list[k])) {
       // Call the UKF-based fusion
       ukf.ProcessMeasurement(measurement_pack_list[k]);
-
+      out_file_ << sensor_type_names(measurement_pack_list[k].sensor_type_) << "\t";
       // output the estimation
       out_file_ << ukf.x_(0) << "\t"; // pos1 - est
       out_file_ << ukf.x_(1) << "\t"; // pos2 - est
@@ -187,40 +189,38 @@ int main(int argc, char* argv[]) {
       out_file_ << ukf.x_(3) << "\t"; // yaw_angle -est
       out_file_ << ukf.x_(4) << "\t"; // yaw_rate -est
 
+      //output indirect vx,xy estimation
+      double v  = ukf.x_(2);
+      double yaw_angle = ukf.x_(3);
+
+      double vx = cos(yaw_angle)*v;
+      double vy = sin(yaw_angle)*v;
+      out_file_ << vx << "\t"; // velocity x direction -est
+      out_file_ << vy << "\t"; // velocity y direction -est
+
       // output the measurements
       if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
         // output the estimation
-
         // p1 - meas
         out_file_ << measurement_pack_list[k].raw_measurements_(0) << "\t";
-
         // p2 - meas
         out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t";
+        out_file_ << ukf.NIS_laser_ << "\t";
       } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
         // output the estimation in the cartesian coordinates
         float ro = measurement_pack_list[k].raw_measurements_(0);
         float phi = measurement_pack_list[k].raw_measurements_(1);
         out_file_ << ro * cos(phi) << "\t"; // p1_meas
         out_file_ << ro * sin(phi) << "\t"; // p2_meas
+        out_file_ << ukf.NIS_radar_ << "\t";
       }
 
       // output the ground truth packages
       out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
       out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
       out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
-      out_file_ << gt_pack_list[k].gt_values_(3) << "\t";
-
-      // output the NIS values
-    
-      if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
-        out_file_ << ukf.NIS_laser_ << "\t";
-        out_file_ << "L" << "\t";
-      } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
-        out_file_ << ukf.NIS_radar_ << "\t";
-        out_file_ << "R" << "\t";
-      }
-
-      out_file_ << ukf.delta_t_ << "\n";
+      out_file_ << gt_pack_list[k].gt_values_(3) << "\n";
+      // out_file_ << ukf.delta_t_ << "\n";
 
       // convert ukf x vector to cartesian to compare to ground truth
       VectorXd ukf_x_cartesian_ = VectorXd(4);
