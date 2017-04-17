@@ -2,6 +2,43 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## RMSE
+
+Here is the RMSE of the UKF implementation:
+
+For sample 1:
+0.0495916
+0.0564871
+ 0.517909
+ 0.528349
+
+For sample 2:
+0.168976
+0.182777
+0.277011
+0.352458
+
+## NIS
+
+Here are the NIS curves
+
+![NIS of LIDAR for sample 1](./data/nis-lidar-sample-1.png)
+![NIS of RADAR for sample 1](./data/nis-radar-sample-1.png)
+
+![NIS of LIDAR for sample 2](./data/nis-lidar-sample-2.png)
+![NIS of RADAR for sample 1](./data/nis-radar-sample-2.png)
+
+## Estimation Visualization
+
+![Position for sample 1](./data/position-estimate-sample-1.png)
+
+![Velocity for sample 1](./data/velocity-sample-1.png)
+![Yaw angle for sample 1](./data/yaw-angle-sample-1.png)
+
+![Position for sample 1](./data/position-estimate-sample-2.png)
+
+![Velocity for sample 1](./data/velocity-sample-2.png)
+![Yaw angle for sample 1](./data/yaw-angle-sample-2.png)
 
 ## Dependencies
 
