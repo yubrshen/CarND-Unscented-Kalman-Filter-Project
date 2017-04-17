@@ -33,8 +33,6 @@ class PlotData(object):
         print('lidar only: {}'.format(self.__cal_rmse(lidar_df)))
         print('radar only: {}'.format(self.__cal_rmse(radar_df)))
         print('all data: {}'.format(self.__cal_rmse(df)))
-        
-
 
         df = self.__add_first_derivative(df)
         df = self.__add_second_derivative(df)
@@ -62,9 +60,7 @@ class PlotData(object):
                 continue
             yaw_acc = (df.iloc[i]['yaw_rate'] - df.iloc[i-1]['yaw_rate'])/delta_time
             yaw_acc_vec.append(yaw_acc)
-            
         df['yaw_acc'] = yaw_acc_vec
-                           
         return df
     def __add_first_derivative(self, df):
         vel_acc_vec = []
@@ -75,14 +71,12 @@ class PlotData(object):
                 vel_acc_vec.append(0)
                 yaw_diff_vec.append(0)
                 yaw_rate_vec.append(0)
-                
                 continue
             delta_time = df.iloc[i]['delta_time']
             if  delta_time== 0:
                 vel_acc_vec.append(vel_acc_vec[-1])
                 yaw_diff_vec.append(yaw_diff_vec[-1])
                 yaw_rate_vec.append(yaw_rate_vec[-1])
-                
                 continue
             #vel acceleration
             vel_acc = (df.iloc[i]['vel_abs'] - df.iloc[i-1]['vel_abs'] )/delta_time
@@ -92,15 +86,11 @@ class PlotData(object):
             if (df.iloc[i-1]['yaw_angle'] != 0) and ((df.iloc[i]['yaw_angle'] != 0)):
                 yaw_diff = (df.iloc[i]['yaw_angle'] - df.iloc[i-1]['yaw_angle'])
                 yaw_diff = self.get_normalziaed_angle(yaw_diff)
-                
-            
             yaw_diff_vec.append(yaw_diff)
             yaw_rate_vec.append(yaw_diff/delta_time)
         df['yaw_diff'] = yaw_diff_vec
         df['yaw_rate'] = yaw_rate_vec
         df['vel_acc'] = vel_acc_vec
-        
-        
         return df
     def get_normalziaed_angle(self, angle):
         while(angle> math.pi):
@@ -120,10 +110,12 @@ class PlotData(object):
         else:
             vx_rmse = 0
             vy_rmse = 0
-    
-        
+
         return px_rmse,py_rmse,vx_rmse,vy_rmse
     def __process_line(self, line):
+        """
+        parse LINE into corresponding data items according to the type of the sensor.
+        """
         px_meas = 0
         py_meas = 0
         
@@ -143,10 +135,7 @@ class PlotData(object):
         rho_gt =0
         phi_gt = 0
         rho_dot_gt = 0
-        
-        
-        
-        
+
         if 'L'in line:
             type_meas,px_meas,py_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt=line[:-1].split("\t")
             px_meas = float(px_meas)
@@ -172,7 +161,6 @@ class PlotData(object):
             
             vx_meas = rho_dot_meas * math.cos(phi_meas)
             vy_meas = rho_dot_meas * math.sin(phi_meas)
-            
             
             rho_gt = math.sqrt(px_gt ** 2 + py_gt ** 2)
             if px_gt != 0:
@@ -200,54 +188,38 @@ class PlotData(object):
         vel_abs = math.sqrt(vx_gt*vx_gt+ vy_gt*vy_gt)   
       
         yaw_angle = math.atan2(vy_gt, vx_gt)
-        
-        
+
         return type_meas, px_meas,py_meas,vx_meas,vy_meas,timestampe,delta_time, px_gt,py_gt,vx_gt,vy_gt,\
             rho_meas,phi_meas,rho_dot_meas, rho_gt,phi_gt,rho_dot_gt,vel_abs,  yaw_angle
-        
-    
-   
+
     def disp_input(self,df):
+        """
+        plot the trajectory by ground truth, and the measurement.
+        """
         colors = ['b', 'c', 'y', 'm', 'r']
         gt = plt.plot(df['px_gt'], df['py_gt'],marker='*', color= colors[0])
         meas = plt.scatter(df['px_meas'], df['py_meas'],marker='v',color=colors[4])
-        plt.legend((gt, meas),
-           ('ground truth', 'measurement'))
+        plt.legend((gt, meas), ('ground truth', 'measurement'))
         plt.show()
         return
-    def run_data_1(self):
-        print('####data sample 1###')
-        kalman_input_file = r'../data/sample-laser-radar-measurement-data-1.txt'
+    def run_data(self, number):
+        """
+        parse the file identified by number, and compute the RMSE, save the parsed result into corresponding CSV file.
+        """
+        number_str = str(number)
+        print('####data sample ' + number_str + ' ###')
+        kalman_input_file = r'../data/sample-laser-radar-measurement-data-' + number_str + '.txt'
         df = self.__load_input_data(kalman_input_file)
         df = self.__cal_input_rmse(df)
-        
-        df.to_csv(self.csv_file_name)
+
+        df.to_csv(self.csv_file_name)  # csv_file_name is set in __load_input_data as side effect
         print(self.csv_file_name + ' saved')
         self.disp_input(df)
         return df
-    
-    def run_data_2(self):
-        print('####data sample 2###')
-        kalman_input_file = r'../data/sample-laser-radar-measurement-data-2.txt'
-        df = self.__load_input_data(kalman_input_file)
-        df = self.__cal_input_rmse(df)
-        
-        df.to_csv(self.csv_file_name)
-        print(self.csv_file_name + ' saved')
-        self.disp_input(df)
-        return df
-    
-   
-        
     def run(self):
-#         self.run_data_1()
-        self.run_data_2()
-    
-
+        self.run_data(1)
+        #self.run_data(2)
         return
-
-
-
-if __name__ == "__main__":   
+if __name__ == "__main__":
     obj= PlotData()
     obj.run()
