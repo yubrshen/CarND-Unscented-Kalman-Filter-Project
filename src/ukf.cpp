@@ -22,11 +22,11 @@ UKF::UKF() {
   sensor_switches_[MeasurementPackage::RADAR] = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 1.5; // The original 30 may be too high,
+  std_a_ = 0.7; // The original 30 may be too high,
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI/3;  // The original 30 may be too high
+  std_yawdd_ = M_PI/3.1;  // The original 30 may be too high
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
   // It's suggested in the Slack channel to be M_PI/3 with good performance.
 
