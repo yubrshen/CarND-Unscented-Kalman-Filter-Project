@@ -52,7 +52,8 @@ class AnalyzeResult(object):
     def visualize_velocity(self,df):
         v_gt = np.sqrt((df['vx_gt'].values **2 + df['vy_gt'].values **2))
 #         v_est = np.sqrt((df['vx_est'].values **2 + df['vy_est'].values **2))
-        v_est = df['vel_abs'].values
+        # v_est = abs(df['vel_abs'].values)  # force the velocity to be positive
+        v_est = (df['vel_abs'].values)
         plt.plot(v_gt, label='Ground Truth Velocity')
         plt.plot(v_est, label='Estimated Velocity')
         plt.legend(loc='upper right')
@@ -61,8 +62,10 @@ class AnalyzeResult(object):
     def visualize_yaw_angle(self,df):
         gt = np.arctan2(df['vy_gt'].values,  df['vx_gt'].values)
         est = df['yaw_angle'].values
+        #est = np.arctan2(np.sin(df['yaw_angle'].values), np.cos(df['yaw_angle'].values))
         plt.plot(gt, label='Ground Truth Yaw Angle')
         plt.plot(est, label='Estimated Yaw Angle')
+        plt.plot(abs(gt-est), label="Diff abs GT and Est", color='b')
         plt.legend(loc='upper right')
         plt.show()
         return

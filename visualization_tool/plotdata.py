@@ -30,9 +30,9 @@ class PlotData(object):
     def __cal_input_rmse(self,df):
         lidar_df = df[df['type_meas'] == 'L']
         radar_df = df[df['type_meas'] == 'R']
-        print('lidar only: {}'.format(self.__cal_rmse(lidar_df)))
-        print('radar only: {}'.format(self.__cal_rmse(radar_df)))
-        print('all data: {}'.format(self.__cal_rmse(df)))
+        print('RMSE (measurement vs. ground truth) lidar only: {}'.format(self.__cal_rmse(lidar_df)))
+        print('RMSE (measurement vs. ground truth) radar only: {}'.format(self.__cal_rmse(radar_df)))
+        print('RMSE (measurement vs. ground truth) all data: {}'.format(self.__cal_rmse(df)))
 
         df = self.__add_first_derivative(df)
         df = self.__add_second_derivative(df)
@@ -40,8 +40,8 @@ class PlotData(object):
         #         print("lidar measurement noise {}, {}".format(np.var(lidar_df['px_meas'] - lidar_df['px_gt']), np.var(lidar_df['py_meas'] - lidar_df['py_gt'])))
 #         print("radar measurement noise {}, {}, {}".format(np.var(radar_df['rho_meas'] - radar_df['rho_gt']), np.var(radar_df['phi_meas'] - radar_df['phi_gt']),
 #                                                  np.var(radar_df['rho_dot_meas'] - radar_df['rho_dot_gt'])))
-        print("motion noise {}, {}".format(np.std(df['vel_acc']), np.std(df['yaw_acc'])))
-        print("velocity mean {}, yaw rate mean{}".format(np.mean(df['vel_abs']), np.mean(np.absolute(df['yaw_angle']))))
+        print("motion noise: std_a, std_yawdd {}, {}".format(np.std(df['vel_acc']), np.std(df['yaw_acc'])))
+        print("velocity mean: {}, yaw rate mean: {}".format(np.mean(df['vel_abs']), np.mean(np.absolute(df['yaw_angle']))))
         
         subdf = df[['yaw_diff', 'yaw_rate', 'yaw_acc','vel_abs', 'vel_acc' ]]
         print('ground truth statistics')
@@ -218,7 +218,7 @@ class PlotData(object):
         return df
     def run(self):
         self.run_data(1)
-        #self.run_data(2)
+        self.run_data(2)
         return
 if __name__ == "__main__":
     obj= PlotData()
