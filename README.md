@@ -6,21 +6,30 @@ Self-Driving Car Engineer Nanodegree Program
 
 Here is the RMSE of the UKF implementation:
 
-For sample 1:
-0.0495916
-0.0564871
- 0.517909
- 0.528349
+For both of the datasets, the RMSE meet the rubric. 
 
-For sample 2:
-0.168976
-0.182777
-0.277011
-0.352458
+### For sample dataset 1:
+
+- 0.0499589
+- 0.055368
+- 0.582238
+- 0.530754
+
+### For sample dataset 2:
+
+- 0.154096
+- 0.183253
+- 0.249703
+- 0.353453
 
 ## NIS
 
-Here are the NIS curves
+Here are the NIS curves. The choice of motion noise (std_a, std_yawdd) is based on heuristics, basing on the distribution of the 
+measurements of rho (longitude speed), analysis of the ground truth result in the distribution statistics of turning 
+angle rate acceleration, and the assumption of the characteristics of bike' movement. My analysis suggested much larger 
+std_a, and std_yawdd for dataset 1, but too large values would cause estimations eventually becomes all "nan" values. 
+
+Also, these two datasets have rather different motion noise patterns. Dataset 2 would need much smaller std_a and std_yawdd. 
 
 ![NIS of LIDAR for sample 1](./data/nis-lidar-sample-1.png)
 ![NIS of RADAR for sample 1](./data/nis-radar-sample-1.png)
@@ -30,15 +39,40 @@ Here are the NIS curves
 
 ## Estimation Visualization
 
+### Dataset 1
+
 ![Position for sample 1](./data/position-estimate-sample-1.png)
+
+In the following, the velocity estimation is mostly negative. The negation of which seems much closer to the ground truth, and the measurements. 
+
+I tried to transform the negative velocity estimation into positive one by negating the velocity value and adjusting the yaw angle to be one PI shift 
+(that is, also change the direction of the movement direction of the speed to compensate on the negation of the velocity.) However, when applying the transformation
+in the program, it caused the estimations eventually becomes "nan" values. The root cause is not yet understood. 
+
+In the following diagram, I tried to show the effect of transformation, in lieu of the failed implementation in the UnscentedKF program. 
+The negated velocity (Modified Estimated Velocity) is shown as blue color line.
+The adjusted yaw (Modified Estimated Yaw Angle) is shown in blue color. However, it turned out to be the same as the original estimated yaw angle. 
 
 ![Velocity for sample 1](./data/velocity-sample-1.png)
 ![Yaw angle for sample 1](./data/yaw-angle-sample-1.png)
 
-![Position for sample 1](./data/position-estimate-sample-2.png)
+### Dataset 2
 
-![Velocity for sample 1](./data/velocity-sample-2.png)
-![Yaw angle for sample 1](./data/yaw-angle-sample-2.png)
+For dataset 2, there is not much issue. 
+
+![Position for sample 2](./data/position-estimate-sample-2.png)
+
+![Velocity for sample 2](./data/velocity-sample-2.png)
+![Yaw angle for sample 2](./data/yaw-angle-sample-2.png)
+
+## Further Studies
+
+More study is needed to understand the characteristics of numerical calculation to address the tendency of divergence to "nan" values. 
+
+Furthermore, when there is more time, I'd like to implement more validation and test support for assurance of implementation correctness. 
+It's quite error prone in the implementation, causing doubt of the nature of the problems whether it's of the appropriateness of algorithm, 
+or the correctness of implementation. 
+
 
 ## Dependencies
 

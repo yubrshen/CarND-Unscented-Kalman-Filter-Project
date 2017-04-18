@@ -49,13 +49,26 @@ class AnalyzeResult(object):
         plt.legend(loc='upper right')
         plt.show()
         return
-    def visualize_velocity(self,df):
+    def visualize_velocity_and_yaw(self,df):
         v_gt = np.sqrt((df['vx_gt'].values **2 + df['vy_gt'].values **2))
-#         v_est = np.sqrt((df['vx_est'].values **2 + df['vy_est'].values **2))
-        # v_est = abs(df['vel_abs'].values)  # force the velocity to be positive
         v_est = (df['vel_abs'].values)
         plt.plot(v_gt, label='Ground Truth Velocity')
         plt.plot(v_est, label='Estimated Velocity')
+        v_mod = v_est
+        v_mod[v_est < 0] = -v_est[v_est < 0]
+        plt.plot(v_mod, label = 'Modified Estimated Velocity', color='b')
+        plt.legend(loc='upper right')
+        plt.show()
+        yaw_gt = np.arctan2(df['vy_gt'].values,  df['vx_gt'].values)
+
+        yaw_est = df['yaw_angle'].values
+        yaw_mod = yaw_est
+        # adjust yaw_mod[v_est < 0] to be reversed by one np.pi and within [-np.pi, np.pi], assuming yaw_est within [-np.pi, np.pi]
+        yaw_mod[(v_est < 0) & (0 < yaw_est) & (yaw_est < np.pi)] = yaw_est[(v_est < 0) & (0 < yaw_est) & (yaw_est < np.pi)] - np.pi
+        yaw_mod[(v_est < 0) & (-np.pi < yaw_est) & (yaw_est < 0 )] = yaw_est[(v_est < 0) & (-np.pi < yaw_est) & (yaw_est < 0 )] + np.pi
+        plt.plot(yaw_gt, label='Ground Truth Yaw Angle')
+        plt.plot(yaw_est, label='Estimated Yaw Angle', marker='*')
+        plt.plot(yaw_mod, label="Modified Estimated Yaw Angle", color='b')
         plt.legend(loc='upper right')
         plt.show()
         return
@@ -76,8 +89,8 @@ class AnalyzeResult(object):
         df = self.__load_input_data(kalman_input_file)
         self.disp_nis(df)
         self.visulize_position(df)
-        self.visualize_velocity(df)
-        self.visualize_yaw_angle(df)
+        self.visualize_velocity_and_yaw(df)
+        #self.visualize_yaw_angle(df)
         df.to_csv(self.csv_file_name)
         print(self.csv_file_name + ' saved')
         return df

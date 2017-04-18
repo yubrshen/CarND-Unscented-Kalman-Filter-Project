@@ -18,13 +18,13 @@ UKF::UKF() {
   sensor_switches_[MeasurementPackage::RADAR] = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.3; // 0.7 The original 30 may be too high,
-  // std_a_ = 11.2;
+  std_a_ = 0.7; // The original 30 may be too high,
+  // std_a_ = 11.2; // should be for data set 1
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.5; // M_PI/3.1;  // The original 30 may be too high
-  // std_yawdd_ = 107.07;
+  std_yawdd_ = M_PI/3.1;  // The original 30 may be too high
+  // std_yawdd_ = 107.07; // should be for data set 1
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
   // It's suggested in the Slack channel to be M_PI/3 with good performance.
 
@@ -173,6 +173,18 @@ double AngleNormalize_alternative(double angle_in) {
   return angle;
 }
 
+// Make the computed velocity to be positive, by adjusting the corresponding velocity, and the yaw
+// But calling the function caused nan values for the estimates of state and convariance matrix.
+void Normalization_(VectorXd &x) { // _ side effect
+  x(3) = AngleNormalize(x(3));
+  if (x(2) < 0) { // negative velocity
+    x(2) = -x(2);
+    if ((0 < x(3)) && (x(3) < M_PI)) x(3) = x(3) - M_PI;
+    if ((-M_PI < x(3)) && (x(3) < 0)) x(3) = x(3) + M_PI;
+  }
+  return;
+}
+
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
@@ -226,10 +238,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       UpdateLaser(measurement_pack);
       break;
     }
-    x_(3) = AngleNormalize(x_(3));
-
-    // x_(2) = fabs(x_(2)); // the velocity should be positive
-    // the above cause P having extremely and large values
+    // Normalization_(x_); // this cause eventual nan values
+    // x_(3) = AngleNormalize(x_(3));
     // print the output
     cout << "x_ = \n" << x_ << endl;
     cout << "P_ = \n" << P_ << endl;
@@ -250,6 +260,7 @@ void UKF::Prediction(double delta_t) {
   AugmentedSigmaPoints();
   SigmaPointPrediction(delta_t);
   PredictMeanAndCovariance();
+  // Normalization_(x_); // here calling Normalization_ caused state and covariance to be nan
 }
 
 /**
