@@ -65,6 +65,18 @@ For dataset 2, there is not much issue.
 ![Velocity for sample 2](./data/velocity-sample-2.png)
 ![Yaw angle for sample 2](./data/yaw-angle-sample-2.png)
 
+## Estimation Accuracy of Different Sensors
+
+Experiments were conducted with LIDAR alone, and RADAR alone. The overall estimation performance were compared. The following are the order of the performance, from the best to the worst: 
+
+1. LIDAR and RADAR combined
+2. LIDAR alone
+3. RADAR alone
+
+With LIDAR alone, the estimations of positions, velocity, and turning angle (yaw) were fairly accurate. 
+
+With RADAR alone, the estimation is much coarse. 
+
 ## Further Studies
 
 More study is needed to understand the characteristics of numerical calculation to address the tendency of divergence to "nan" values. 
