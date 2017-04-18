@@ -1,7 +1,7 @@
+#include <iostream>
 #include "ukf.h"
 #include "tools.h"
 #include "Eigen/Dense"
-#include <iostream>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -12,21 +12,19 @@ using std::vector;
  * Initializes Unscented Kalman filter
  */
 UKF::UKF() {
-  // if this is false, laser measurements will be ignored (except during init)
-  // use_laser_ = true;
-
-  // if this is false, radar measurements will be ignored (except during init)
-  // use_radar_ = true;
-
+  // if the map entry for laser is false, laser measurements will be ignored (except during init)
+  // if the map entry for radar is false, radar measurements will be ignored (except during init)
   sensor_switches_[MeasurementPackage::LASER] = true;
   sensor_switches_[MeasurementPackage::RADAR] = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.7; // The original 30 may be too high,
+  std_a_ = 0.3; // 0.7 The original 30 may be too high,
+  // std_a_ = 11.2;
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI/3.1;  // The original 30 may be too high
+  std_yawdd_ = 0.5; // M_PI/3.1;  // The original 30 may be too high
+  // std_yawdd_ = 107.07;
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
   // It's suggested in the Slack channel to be M_PI/3 with good performance.
 
@@ -155,6 +153,25 @@ MeasurementPackage FixedMeasurement(const MeasurementPackage &measurement_pack) 
   }
   return measurement_pack;
 }
+// inline
+double AngleNormalize(double angle_in) {
+  double angle = angle_in;
+  if (M_PI < fabs(angle)) {
+    double full_circle = 2*M_PI;
+    angle = fmod(angle, full_circle);
+    while (angle < -M_PI) angle += full_circle;
+    while (M_PI < angle) angle -= full_circle;
+  }
+  return angle;
+}
+
+double AngleNormalize_alternative(double angle_in) {
+  double angle = angle_in;
+  if (M_PI < fabs(angle)) {
+    angle = atan2(sin(angle), cos(angle));
+  }
+  return angle;
+}
 
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
@@ -209,6 +226,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       UpdateLaser(measurement_pack);
       break;
     }
+    x_(3) = AngleNormalize(x_(3));
+
+    // x_(2) = fabs(x_(2)); // the velocity should be positive
+    // the above cause P having extremely and large values
     // print the output
     cout << "x_ = \n" << x_ << endl;
     cout << "P_ = \n" << P_ << endl;
@@ -229,26 +250,6 @@ void UKF::Prediction(double delta_t) {
   AugmentedSigmaPoints();
   SigmaPointPrediction(delta_t);
   PredictMeanAndCovariance();
-}
-
-// inline
-double AngleNormalize(double angle_in) {
-  double angle = angle_in;
-  if (M_PI < fabs(angle)) {
-    double full_circle = 2*M_PI;
-    angle = fmod(angle, full_circle);
-    while (angle < -M_PI) angle += full_circle;
-    while (M_PI < angle) angle -= full_circle;
-  }
-  return angle;
-}
-
-double AngleNormalize_alternative(double angle_in) {
-  double angle = angle_in;
-  if (M_PI < fabs(angle)) {
-    angle = atan2(sin(angle), cos(angle));
-  }
-  return angle;
 }
 
 /**
@@ -490,6 +491,3 @@ void UKF::UpdateStateFromRadar(MeasurementPackage& meas_package) {
 
   NIS_radar_ = z_diff_new.transpose()*Si*z_diff_new;
 }
-
-// NEXT: debug the code
-// investigate on how to reduce RMSE
