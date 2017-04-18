@@ -198,7 +198,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_.fill(0.0);
       x_[0] = measurement_pack.raw_measurements_[0] * cos(measurement_pack.raw_measurements_[1]);
       x_[1] = measurement_pack.raw_measurements_[0] * sin(measurement_pack.raw_measurements_[1]);
-      x_[2] = measurement_pack.raw_measurements_[2]; // rho_dot may be approximation to the velocity
+      x_[2] = fabs(measurement_pack.raw_measurements_[2]); // rho_dot may be approximation to the velocity
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0, 0;
     }
