@@ -8,14 +8,14 @@ Here is the RMSE of the UKF implementation:
 
 For both of the datasets, the RMSE meet the rubric. 
 
-### For sample dataset 1:
+### For sample dataset 1 (Rubric's requirement: [0.09, 0.09, 0.65, 0.65] ):
 
 - 0.0499589
 - 0.055368
 - 0.582238
 - 0.530754
 
-### For sample dataset 2:
+### For sample dataset 2 (Rubric's requirement: [0.20, 0.20, 0.55, 0.55]):
 
 - 0.154096
 - 0.183253

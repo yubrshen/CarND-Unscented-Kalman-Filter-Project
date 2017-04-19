@@ -25,10 +25,11 @@ UKF::UKF() {
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI/2.5;  // The original 30 may be too high
-  // std_yawdd_ = 107.07; // should be for data set 1
+  std_yawdd_ = M_PI/1.34;  // M_PI/1.34 is good for dataset 1, and acceptable to dataset 2
+  // The original 30 may be too high
+  // std_yawdd_ = 107.07; // it should be 107 for data set 1
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
-  // It's suggested in the Slack channel to be M_PI/3 with good performance.
+  // std_yawdd_ = M_PI/10; // too small for dataset 1
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -68,7 +69,7 @@ UKF::UKF() {
   srand (static_cast <unsigned> (time(0)));
   for (int i = 0; i < n_x_; i++) {
     for (int j = 0; j < n_x_; j++) {
-      P_(i, j) = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.05);
+      P_(i, j) = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.05) + 0.1;
     }
   }
   for (int j = 0; j < n_x_; j++) {
