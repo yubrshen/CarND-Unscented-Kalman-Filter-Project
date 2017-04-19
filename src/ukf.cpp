@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdlib> // for rand() and srand()
+#include <ctime> // for time for seed for random number generator
 #include "ukf.h"
 #include "tools.h"
 #include "Eigen/Dense"
@@ -18,12 +20,12 @@ UKF::UKF() {
   sensor_switches_[MeasurementPackage::RADAR] = true;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.7; // The original 30 may be too high,
+  std_a_ = 0.3; // change from 0.7 to 0.8 as NIS of LIDAR shows the variation is much smaller. The original 30 may be too high,
   // std_a_ = 11.2; // should be for data set 1
   // std_a_ is computed of the std of the measured rho_dot, which should be a reasonable approximation.
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI/3.1;  // The original 30 may be too high
+  std_yawdd_ = M_PI/2.5;  // The original 30 may be too high
   // std_yawdd_ = 107.07; // should be for data set 1
   // std_yawdd set to about 20th of 2*N_PI, about 20 seconds to reach to the speed of turning a full circle in one seconds.
   // It's suggested in the Slack channel to be M_PI/3 with good performance.
@@ -62,12 +64,22 @@ UKF::UKF() {
 
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
-  P_ <<
-    1,  0,  0,    0,    0,
-    0,  1,  0,    0,    0,
-    0,  0,  1,    0,    0,
-    0,  0,  0,    1,    0,
-    0,  0,  0,    0,    1;      // initial guess
+  // seed for random number generator
+  srand (static_cast <unsigned> (time(0)));
+  for (int i = 0; i < n_x_; i++) {
+    for (int j = 0; j < n_x_; j++) {
+      P_(i, j) = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.05);
+    }
+  }
+  for (int j = 0; j < n_x_; j++) {
+    P_(j, j) = 1.0;
+  }
+  // P_ <<
+  //   2.0,  1.0,  1.0,    1.0,    1.0,
+  //   1.0,  2.0,  1.0,    1.0,    1.0,
+  //   1.0,  1.0,  2.0,    1.0,    1.0,
+  //   1.0,  1.0,  1.0,    3.0,    1.0,
+  //   1.0,  1.0,  1.0,    1.0,    3.0;      // initial guess
 
   z_pred_ = VectorXd(n_z_); z_pred_.fill(0.0);
 
