@@ -233,8 +233,7 @@ void UKF::UpdateLaser(MeasurementPackage meas_package) {
   VectorXd y = meas_package.raw_measurements_ - H_laser_*x_;
 
   MatrixXd Ht = H_laser_.transpose();
-  //MatrixXd S = H_laser_ * P_ * Ht + R_laser_;
-  MatrixXd Si = S_laser_inversed(); // S.inverse();
+  MatrixXd Si = S_laser_inversed();
   MatrixXd PHt = P_ * Ht;
   MatrixXd K = PHt * Si;
 
@@ -246,7 +245,7 @@ void UKF::UpdateLaser(MeasurementPackage meas_package) {
   P_ = (I - K * H_laser_) * P_;
 
   VectorXd y_new = meas_package.raw_measurements_ - H_laser_*x_;
-  MatrixXd Si_new = S_laser_inversed(); // (H_laser_ * P_ * Ht + R_laser_).inverse();
+  MatrixXd Si_new = S_laser_inversed();
   NIS_laser_ = y_new.transpose()*Si_new*y_new;
 }
 
@@ -269,7 +268,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 // Called by Prediction for the final computation of the prediction of state, and covariance
 // update x_, and P_
-
 
 void UKF::PredictMeanAndCovariance() {
   // assume sigma points transformed by the process are updated.
