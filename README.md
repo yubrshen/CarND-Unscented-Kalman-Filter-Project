@@ -4,66 +4,31 @@ Self-Driving Car Engineer Nanodegree Program
 ---
 ## RMSE
 
-Here is the RMSE of the UKF implementation:
+Here is the RMSE for the data set "obj_pose-laser-radar-synthetic-input.txt" of the UKF implementation:
 
-For both of the datasets, the RMSE meet the rubric. 
+(Rubric's requirement: [.09, .10, .40, .30])
 
-### For sample dataset 1 (Rubric's requirement: [0.09, 0.09, 0.65, 0.65] ):
-
-- 0.0499589
-- 0.055368
-- 0.582238
-- 0.530754
-
-### For sample dataset 2 (Rubric's requirement: [0.20, 0.20, 0.55, 0.55]):
-
-- 0.154096
-- 0.183253
-- 0.249703
-- 0.353453
+    Accuracy - RMSE:
+    0.286903
+    0.288844
+     1.97078
+      1.6197
 
 ## NIS
+![NIS of LIDAR for Object_Pose](./data/nis-lidar-obj-pose.png)
+![NIS of RADAR for Object_Pose](./data/nis-radar-obj-pose.png)
 
 Here are the NIS curves. The choice of motion noise (std_a, std_yawdd) is based on heuristics, basing on the distribution of the 
 measurements of rho (longitude speed), analysis of the ground truth result in the distribution statistics of turning 
 angle rate acceleration, and the assumption of the characteristics of bike' movement. My analysis suggested much larger 
 std_a, and std_yawdd for dataset 1, but too large values would cause estimations eventually becomes all "nan" values. 
 
-Also, these two datasets have rather different motion noise patterns. Dataset 2 would need much smaller std_a and std_yawdd. 
-
-![NIS of LIDAR for sample 1](./data/nis-lidar-sample-1.png)
-![NIS of RADAR for sample 1](./data/nis-radar-sample-1.png)
-
-![NIS of LIDAR for sample 2](./data/nis-lidar-sample-2.png)
-![NIS of RADAR for sample 1](./data/nis-radar-sample-2.png)
-
 ## Estimation Visualization
 
-### Dataset 1
+![Position for Object_Pose](./data/position-obj-pose.png)
 
-![Position for sample 1](./data/position-estimate-sample-1.png)
-
-In the following, the velocity estimation is mostly negative. The negation of which seems much closer to the ground truth, and the measurements. 
-
-I tried to transform the negative velocity estimation into positive one by negating the velocity value and adjusting the yaw angle to be one PI shift 
-(that is, also change the direction of the movement direction of the speed to compensate on the negation of the velocity.) However, when applying the transformation
-in the program, it caused the estimations eventually becomes "nan" values. The root cause is not yet understood. 
-
-In the following diagram, I tried to show the effect of transformation, in lieu of the failed implementation in the UnscentedKF program. 
-The negated velocity (Modified Estimated Velocity) is shown as blue color line.
-The adjusted yaw (Modified Estimated Yaw Angle) is shown in blue color. However, it turned out to be the same as the original estimated yaw angle. 
-
-![Velocity for sample 1](./data/velocity-sample-1.png)
-![Yaw angle for sample 1](./data/yaw-angle-sample-1.png)
-
-### Dataset 2
-
-For dataset 2, there is not much issue. 
-
-![Position for sample 2](./data/position-estimate-sample-2.png)
-
-![Velocity for sample 2](./data/velocity-sample-2.png)
-![Yaw angle for sample 2](./data/yaw-angle-sample-2.png)
+![Velocity for Object_Pose](./data/velocity-obj-pose.png)
+![Yaw for Object_Pose](./data/yaw-obj-pose.png)
 
 ## Estimation Accuracy of Different Sensors
 

@@ -46,7 +46,8 @@ class AnalyzeResult(object):
         plt.xlabel('Postiion estimation' + " " + self.data_label)
         plt.ylabel('py')
         plt.title('px')
-        plt.legend(loc='upper right')
+        #plt.legend(loc='upper right')
+        plt.legend(loc='lower right')
         plt.show()
         return
     def visualize_velocity_and_yaw(self,df):
@@ -56,7 +57,7 @@ class AnalyzeResult(object):
         plt.plot(v_est, label='Estimated Velocity')
         v_mod = v_est
         v_mod[v_est < 0] = -v_est[v_est < 0]
-        plt.plot(v_mod, label = 'Modified Estimated Velocity', color='b')
+        #plt.plot(v_mod, label = 'Modified Estimated Velocity', color='b')
         plt.legend(loc='upper right')
         plt.show()
         yaw_gt = np.arctan2(df['vy_gt'].values,  df['vx_gt'].values)
@@ -66,9 +67,9 @@ class AnalyzeResult(object):
         # adjust yaw_mod[v_est < 0] to be reversed by one np.pi and within [-np.pi, np.pi], assuming yaw_est within [-np.pi, np.pi]
         yaw_mod[(v_est < 0) & (0 < yaw_est) & (yaw_est < np.pi)] = yaw_est[(v_est < 0) & (0 < yaw_est) & (yaw_est < np.pi)] - np.pi
         yaw_mod[(v_est < 0) & (-np.pi < yaw_est) & (yaw_est < 0 )] = yaw_est[(v_est < 0) & (-np.pi < yaw_est) & (yaw_est < 0 )] + np.pi
-        plt.plot(yaw_gt, label='Ground Truth Yaw Angle')
-        plt.plot(yaw_est, label='Estimated Yaw Angle', marker='*')
-        plt.plot(yaw_mod, label="Modified Estimated Yaw Angle", color='b')
+        plt.plot(yaw_gt, label='Ground Truth Yaw Angle', marker='*')
+        plt.plot(yaw_est, label='Estimated Yaw Angle')
+        # plt.plot(yaw_mod, label="Modified Estimated Yaw Angle", color='b')
         plt.legend(loc='upper right')
         plt.show()
         return
@@ -86,7 +87,10 @@ class AnalyzeResult(object):
         number_str = str(number)
         print('####data sample ' + number_str + ' ###')
         kalman_input_file = r'../data/sample-laser-radar-measurement-data-' + number_str + '_output.txt'
-        df = self.__load_input_data(kalman_input_file)
+        self.process_file(kalman_input_file)
+        return
+    def process_file(self, file):
+        df = self.__load_input_data(file)
         self.disp_nis(df)
         self.visulize_position(df)
         self.visualize_velocity_and_yaw(df)
@@ -94,9 +98,11 @@ class AnalyzeResult(object):
         df.to_csv(self.csv_file_name)
         print(self.csv_file_name + ' saved')
         return df
+
     def run(self):
-        self.run_data(1)
-        self.run_data(2)
+        self.process_file(r'../data/obj_pose-laser-radar-synthetic-output.txt')
+        # self.run_data(1)
+        # self.run_data(2)
         # plt.show()
         return
 if __name__ == "__main__":

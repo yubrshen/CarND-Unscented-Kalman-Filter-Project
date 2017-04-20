@@ -137,7 +137,12 @@ class PlotData(object):
         rho_dot_gt = 0
 
         if 'L'in line:
-            type_meas,px_meas,py_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt=line[:-1].split("\t")
+            # type_meas,px_meas,py_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt=line[0:8].split("\t")
+            # only take the first 8 items required
+            buf = line[:-1].split("\t")
+            assert 10 == len(buf)
+            # print('line[:-1].split("\t"): ', buf, 'len(buf): ', len(buf))
+            type_meas,px_meas,py_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt = buf[0:8]
             px_meas = float(px_meas)
             py_meas = float(py_meas)
             timestampe = int(timestampe)
@@ -146,7 +151,10 @@ class PlotData(object):
             vx_gt = float(vx_gt)
             vy_gt = float(vy_gt)
         elif 'R' in line:
-            type_meas,rho_meas,phi_meas,rho_dot_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt=line[:-1].split("\t")
+            #type_meas,rho_meas,phi_meas,rho_dot_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt=line[:-1].split("\t")
+            buf = line[:-1].split("\t")
+            assert 11 == len(buf)
+            type_meas,rho_meas,phi_meas,rho_dot_meas, timestampe,px_gt,py_gt,vx_gt,vy_gt = buf[0:9]
             rho_meas = float(rho_meas)
             phi_meas = float(phi_meas)
             rho_dot_meas = float(rho_dot_meas)
@@ -208,17 +216,20 @@ class PlotData(object):
         """
         number_str = str(number)
         print('####data sample ' + number_str + ' ###')
-        kalman_input_file = r'../data/sample-laser-radar-measurement-data-' + number_str + '.txt'
-        df = self.__load_input_data(kalman_input_file)
+        file = r'../data/sample-laser-radar-measurement-data-' + number_str + '.txt'
+        return self.process_file(file)
+    def process_file(self, file):
+        df = self.__load_input_data(file)
         df = self.__cal_input_rmse(df)
-
         df.to_csv(self.csv_file_name)  # csv_file_name is set in __load_input_data as side effect
         print(self.csv_file_name + ' saved')
         self.disp_input(df)
         return df
+
     def run(self):
-        self.run_data(1)
-        self.run_data(2)
+        # self.run_data(1)
+        # self.run_data(2)
+        self.process_file(r'../data/obj_pose-laser-radar-synthetic-input.txt')
         return
 if __name__ == "__main__":
     obj= PlotData()

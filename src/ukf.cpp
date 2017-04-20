@@ -66,21 +66,21 @@ UKF::UKF() {
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
   // seed for random number generator
-  srand (static_cast <unsigned> (time(0)));
-  for (int i = 0; i < n_x_; i++) {
-    for (int j = 0; j < n_x_; j++) {
-      P_(i, j) = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.05) + 0.1;
-    }
-  }
-  for (int j = 0; j < n_x_; j++) {
-    P_(j, j) = 1.0;
-  }
-  // P_ <<
-  //   2.0,  1.0,  1.0,    1.0,    1.0,
-  //   1.0,  2.0,  1.0,    1.0,    1.0,
-  //   1.0,  1.0,  2.0,    1.0,    1.0,
-  //   1.0,  1.0,  1.0,    3.0,    1.0,
-  //   1.0,  1.0,  1.0,    1.0,    3.0;      // initial guess
+  // srand (static_cast <unsigned> (time(0)));
+  // for (int i = 0; i < n_x_; i++) {
+  //   for (int j = 0; j < n_x_; j++) {
+  //     P_(i, j) = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.05) + 0.1;
+  //   }
+  // }
+  // for (int j = 0; j < n_x_; j++) {
+  //   P_(j, j) = 1.0;
+  // }
+  P_ <<
+    2.0,    0.001,  0.001,    0.001,    0.001,
+    0.001,  2.0,    0.001,    0.001,    0.001,
+    0.001,  0.001,  2.0,      0.001,    0.001,
+    0.001,  0.001,  0.001,    3.0,      0.001,
+    0.001,  0.001,  0.001,    0.001,    3.0;      // initial guess
 
   z_pred_ = VectorXd(n_z_); z_pred_.fill(0.0);
 
