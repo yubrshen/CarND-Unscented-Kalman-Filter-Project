@@ -102,12 +102,14 @@ UKF::UKF() {
 
 UKF::~UKF() {}
 
+// Very small distance for object tracking in self-driving-car:
 const double SMALL_MEASUREMENT = 0.01; // 0.01m = 1 cm. sqrt(0.01^2 + 0.01^2) = ca. 1.4 cm
 
 inline float SquaredDistance(const float& px, const float& py) {
   return px*px + py*py;
 }
 
+// Check if the measurement is of acceptable quality
 bool UKF::GoodMeasurement(const MeasurementPackage &measurement_pack) {
   switch (measurement_pack.sensor_type_) {
   case MeasurementPackage::RADAR:
@@ -125,55 +127,11 @@ bool UKF::GoodMeasurement(const MeasurementPackage &measurement_pack) {
   return false; // reject not qualified data
 }
 
-MeasurementPackage FixedMeasurement(const MeasurementPackage &measurement_pack) {
-  MeasurementPackage copied;
-  switch (measurement_pack.sensor_type_) {
-  case MeasurementPackage::RADAR:
-    if (measurement_pack.raw_measurements_[0] < SMALL_MEASUREMENT) {
-      copied = MeasurementPackage(measurement_pack);
-      copied.raw_measurements_[0] = SMALL_MEASUREMENT;
-      return copied;
-    }
-    break;
-  case MeasurementPackage::LASER:
-    if (SquaredDistance(measurement_pack.raw_measurements_[0],
-                        measurement_pack.raw_measurements_[1]) < SMALL_MEASUREMENT) {
-      copied = MeasurementPackage(measurement_pack);
-      copied.raw_measurements_[0] = SMALL_MEASUREMENT;
-      copied.raw_measurements_[1] = SMALL_MEASUREMENT;
-      return copied;
-    }
-    break;
-  }
-  return measurement_pack;
-}
-// inline
-double AngleNormalize_alternative(double angle_in) {
-  double angle = angle_in;
-  if (M_PI < fabs(angle)) {
-    double full_circle = 2*M_PI;
-    angle = fmod(angle, full_circle);
-    while (angle < -M_PI) angle += full_circle;
-    while (M_PI < angle) angle -= full_circle;
-  }
-  return angle;
-}
-
+// Normalize yaw angle to be within [-PI, PI]
+// update the input, as side effect!
 void AngleNormalize_(double &angle_in) {
   if (M_PI < fabs(angle_in)) {
     angle_in = atan2(sin(angle_in), cos(angle_in));
-  }
-  return;
-}
-
-// Make the computed velocity to be positive, by adjusting the corresponding velocity, and the yaw
-// But calling the function caused nan values for the estimates of state and convariance matrix.
-void Normalization_(VectorXd &x) { // _ side effect
-  AngleNormalize_(x(3));
-  if (x(2) < 0) { // negative velocity
-    x(2) = -x(2);
-    if ((0 < x(3)) && (x(3) < M_PI)) x(3) = x(3) - M_PI;
-    if ((-M_PI < x(3)) && (x(3) < 0)) x(3) = x(3) + M_PI;
   }
   return;
 }
@@ -182,13 +140,13 @@ void Normalization_(VectorXd &x) { // _ side effect
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
-void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
   /**
   DONE:
   Complete this function! Make sure you switch between lidar and radar measurements.
   */
   // pre-condition: the measurement is acceptable for processing
-  MeasurementPackage measurement_pack = FixedMeasurement(meas_package);
+  // before calling this function, it's already decided that the measurement is qualified.
   // Initialization
   if (!is_initialized_) {
     /**
@@ -210,11 +168,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
     return; // no more point to process this initial measurement
   }
-  if (sensor_switches_[measurement_pack.sensor_type_]) { // add guard to only proceed with the enabled sensor
+  if (sensor_switches_[measurement_pack.sensor_type_]) { // only proceed with the enabled sensor
     // Prediction
     double delta_t = (measurement_pack.timestamp_ - previous_timestamp_)/1000000.0;
     delta_t_ = delta_t;
     previous_timestamp_ = measurement_pack.timestamp_;
+    // when the delta_t is too large, iterate prediction with smaller delta
+    // in order to satisfy the assumption of sigma transformation for nonlinear process.
     while (0.1 < delta_t) {
       const double dt = 0.05;
       Prediction(dt);
@@ -232,8 +192,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       break;
     }
     AngleNormalize_(x_(3)); // only do the final adjustment
-    // Normalization_(x_); // this cause eventual nan values
-    // print the output
     cout << "x_ = \n" << x_ << endl;
     cout << "P_ = \n" << P_ << endl;
   }

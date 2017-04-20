@@ -91,7 +91,7 @@ public:
    */
   virtual ~UKF();
 
-  // Check if the measurement is of acceptable qualify
+  // Check if the measurement is of acceptable quality
   bool GoodMeasurement(const MeasurementPackage &measurement_pack);
 
   /**

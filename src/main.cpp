@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
     cout << "k: " << k << " sensor type: " << sensor_type_names( measurement_pack_list[k].sensor_type_ ) << endl;
-    if (ukf.GoodMeasurement(measurement_pack_list[k])) {
+    if (ukf.GoodMeasurement(measurement_pack_list[k])) { // only process qualified measurements
       // Call the UKF-based fusion
       ukf.ProcessMeasurement(measurement_pack_list[k]);
       out_file_ << sensor_type_names(measurement_pack_list[k].sensor_type_) << "\t";
