@@ -8,20 +8,33 @@ Here is the RMSE for the data set "obj_pose-laser-radar-synthetic-input.txt" of 
 
 (Rubric's requirement: [.09, .10, .40, .30])
 
-    Accuracy - RMSE:
-    0.286903
-    0.288844
-     1.97078
-      1.6197
+The best so far with std\_a = 0.23, std\_yawdd = 0.23: 
+
+    0.0691687
+    0.0971907
+     0.346969
+     0.239235
+
+They meet the rubric requirement. 
+
+How I found the combination of the parameters?
+
+1. compute the std of velocity acceleration, the std of yaw rate acceleration based on the measurement data
+2. use the computed as starting points
+3. observe the NIS distribution, determine the possibility to increase std\_a, and std\_yawdd
+4. in small increments to increase std\_a, and std\_yawdd, until the RMSE meets the rubric requirement. 
+
+Experiment with LIDAR or RADAR alone also helped to develop experience of the possible range of std\_a, and std\_yawdd
+
+It's still very blind search. 
 
 ## NIS
+
+The NIS curvees shows the guess of std\_a, and std\_yawdd are acceptable. 
+It's not too certain with majority of NIS values near the 95% threshold. It's not too random, with a few outliers of NIS above the 95 percentile. 
+
 ![NIS of LIDAR for Object_Pose](./data/nis-lidar-obj-pose.png)
 ![NIS of RADAR for Object_Pose](./data/nis-radar-obj-pose.png)
-
-Here are the NIS curves. The choice of motion noise (std_a, std_yawdd) is based on heuristics, basing on the distribution of the 
-measurements of rho (longitude speed), analysis of the ground truth result in the distribution statistics of turning 
-angle rate acceleration, and the assumption of the characteristics of bike' movement. My analysis suggested much larger 
-std_a, and std_yawdd for dataset 1, but too large values would cause estimations eventually becomes all "nan" values. 
 
 ## Estimation Visualization
 
@@ -45,6 +58,11 @@ With RADAR alone, the estimation is much coarse.
 ## Further Studies
 
 More study is needed to understand the characteristics of numerical calculation to address the tendency of divergence to "nan" values. 
+
+I also observe that converting the computed yaw to be within [-PI, PI] may cause discontinuity or inaccuracy in numerical computation. 
+I used to convert it every time when yaw calculation is involved. I observed that there was some jumps in the estimated yaw angle, and also 
+phase lag in the velocity estimation. At the end, I only do the conversion once at the end of processing one measurement. Then the estimations of yaw angle, and velocity become much smooth. 
+The mathematical explanation is not yet clear to me. I would like to understand what should be the proper mathematical sound procedure. 
 
 Furthermore, when there is more time, I'd like to implement more validation and test support for assurance of implementation correctness. 
 It's quite error prone in the implementation, causing doubt of the nature of the problems whether it's of the appropriateness of algorithm, 
